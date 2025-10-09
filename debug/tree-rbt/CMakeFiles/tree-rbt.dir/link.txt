@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC -g -shared -Wl,-soname,libtree-rbt.so -o libtree-rbt.so "CMakeFiles/tree-rbt.dir/tree-rbt.c.o" 

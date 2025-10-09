@@ -1,0 +1,14 @@
+prefix=/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TEA/debug/tmp
+bindir=${prefix}/bin
+staticlibdir=${prefix}/lib
+sharedlibdir=${prefix}/lib
+includedir=${prefix}/include
+
+Version: 
+
+Name: avltree
+Description: List library
+
+Requires:
+Libs: -L${bindir} -L${staticlibdir} -L${sharedlibdir} -lavltree
+Cflags: -I${includedir}
