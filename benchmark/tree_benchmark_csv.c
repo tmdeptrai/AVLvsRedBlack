@@ -128,23 +128,23 @@
 #undef Tree
 
 static double
-elapsed_ms (const struct timespec *start, const struct timespec *end)
+elapsed_ms(const struct timespec *start, const struct timespec *end)
 {
   time_t secs = end->tv_sec - start->tv_sec;
   long nsecs = end->tv_nsec - start->tv_nsec;
   if (nsecs < 0)
-    {
-      --secs;
-      nsecs += 1000000000L;
-    }
-  return (double) secs * 1000.0 + (double) nsecs / 1e6;
+  {
+    --secs;
+    nsecs += 1000000000L;
+  }
+  return (double)secs * 1000.0 + (double)nsecs / 1e6;
 }
 
 static int
-cmp_int (const void *a, const void *b)
+cmp_int(const void *a, const void *b)
 {
-  int ia = *(const int *) a;
-  int ib = *(const int *) b;
+  int ia = *(const int *)a;
+  int ib = *(const int *)b;
   if (ia < ib)
     return -1;
   if (ia > ib)
@@ -153,271 +153,270 @@ cmp_int (const void *a, const void *b)
 }
 
 static void
-shuffle_ints (int *array, size_t length)
+shuffle_ints(int *array, size_t length)
 {
   if (length < 2)
     return;
   for (size_t i = length - 1; i > 0; --i)
-    {
-      size_t j = (size_t) (rand () % (int) (i + 1));
-      int tmp = array[i];
-      array[i] = array[j];
-      array[j] = tmp;
-    }
+  {
+    size_t j = (size_t)(rand() % (int)(i + 1));
+    int tmp = array[i];
+    array[i] = array[j];
+    array[j] = tmp;
+  }
 }
 
 static char *
-build_filename (const char *prefix, const char *suffix)
+build_filename(const char *prefix, const char *suffix)
 {
-  size_t len = strlen (prefix) + strlen (suffix) + 2; /* underscore + NUL */
-  char *path = malloc (len);
+  size_t len = strlen(prefix) + strlen(suffix) + 2; /* underscore + NUL */
+  char *path = malloc(len);
   if (!path)
     return NULL;
-  snprintf (path, len, "%s_%s", prefix, suffix);
+  snprintf(path, len, "%s_%s", prefix, suffix);
   return path;
 }
 
 static bool
-write_csv (const char *filepath,
-           const double *insert_times,
-           const double *search_times,
-           const double *delete_times,
-           size_t count)
+write_csv(const char *filepath,
+          const double *insert_times,
+          const double *search_times,
+          const double *delete_times,
+          size_t count)
 {
-  FILE *fp = fopen (filepath, "w");
+  FILE *fp = fopen(filepath, "w");
   if (!fp)
-    {
-      fprintf (stderr, "Unable to open %s for writing.\n", filepath);
-      return false;
-    }
+  {
+    fprintf(stderr, "Unable to open %s for writing.\n", filepath);
+    return false;
+  }
 
   for (size_t i = 0; i < count; ++i)
+  {
+    if (fprintf(fp, "%.6f,%.6f,%.6f\n",
+                insert_times[i],
+                search_times[i],
+                delete_times[i]) < 0)
     {
-      if (fprintf (fp, "%.6f,%.6f,%.6f\n",
-                   insert_times[i],
-                   search_times[i],
-                   delete_times[i]) < 0)
-        {
-          fprintf (stderr, "Failed while writing to %s.\n", filepath);
-          fclose (fp);
-          return false;
-        }
+      fprintf(stderr, "Failed while writing to %s.\n", filepath);
+      fclose(fp);
+      return false;
     }
+  }
 
-  fclose (fp);
+  fclose(fp);
   return true;
 }
 
-#define DEFINE_COLLECT_FUNCTIONS(tag, tree_type, insert_fn, search_fn, remove_fn, delete_fn)          \
-  static bool collect_timings_##tag (const int *insert_order,                                         \
-                                     const int *search_order,                                         \
-                                     const int *delete_order,                                         \
-                                     size_t count,                                                    \
-                                     double *insert_times,                                            \
-                                     double *search_times,                                            \
-                                     double *delete_times)                                            \
-  {                                                                                                   \
-    tree_type root = NULL;                                                                            \
-    struct timespec start, end;                                                                       \
-                                                                                                      \
-    for (size_t i = 0; i < count; ++i)                                                                \
-      {                                                                                               \
-        clock_gettime (CLOCK_MONOTONIC, &start);                                                      \
-        if (!insert_fn (&root, &insert_order[i], sizeof (int), cmp_int))                              \
-          {                                                                                           \
-            fprintf (stderr, #tag " insert failed at index %zu\n", i);                                \
-            delete_fn (root, NULL);                                                                   \
-            return false;                                                                             \
-          }                                                                                           \
-        clock_gettime (CLOCK_MONOTONIC, &end);                                                        \
-        insert_times[i] = elapsed_ms (&start, &end);                                                  \
-      }                                                                                               \
-                                                                                                      \
-    for (size_t i = 0; i < count; ++i)                                                                \
-      {                                                                                               \
-        clock_gettime (CLOCK_MONOTONIC, &start);                                                      \
-        void *found = search_fn (root, &search_order[i], cmp_int);                                    \
-        clock_gettime (CLOCK_MONOTONIC, &end);                                                        \
-        search_times[i] = elapsed_ms (&start, &end);                                                  \
-        if (!found)                                                                                   \
-          {                                                                                           \
-            fprintf (stderr, #tag " search missed key %d\n", search_order[i]);                        \
-            delete_fn (root, NULL);                                                                   \
-            return false;                                                                             \
-          }                                                                                           \
-      }                                                                                               \
-                                                                                                      \
-    for (size_t i = 0; i < count; ++i)                                                                \
-      {                                                                                               \
-        clock_gettime (CLOCK_MONOTONIC, &start);                                                      \
-        if (!remove_fn (&root, &delete_order[i], cmp_int))                                            \
-          {                                                                                           \
-            fprintf (stderr, #tag " delete failed for key %d\n", delete_order[i]);                    \
-            delete_fn (root, NULL);                                                                   \
-            return false;                                                                             \
-          }                                                                                           \
-        clock_gettime (CLOCK_MONOTONIC, &end);                                                        \
-        delete_times[i] = elapsed_ms (&start, &end);                                                  \
-      }                                                                                               \
-                                                                                                      \
-    delete_fn (root, NULL);                                                                           \
-    return true;                                                                                      \
+#define DEFINE_COLLECT_FUNCTIONS(tag, tree_type, insert_fn, search_fn, remove_fn, delete_fn) \
+  static bool collect_timings_##tag(const int *insert_order,                                 \
+                                    const int *search_order,                                 \
+                                    const int *delete_order,                                 \
+                                    size_t count,                                            \
+                                    double *insert_times,                                    \
+                                    double *search_times,                                    \
+                                    double *delete_times)                                    \
+  {                                                                                          \
+    tree_type root = NULL;                                                                   \
+    struct timespec start, end;                                                              \
+                                                                                             \
+    for (size_t i = 0; i < count; ++i)                                                       \
+    {                                                                                        \
+      clock_gettime(CLOCK_MONOTONIC, &start);                                                \
+      if (!insert_fn(&root, &insert_order[i], sizeof(int), cmp_int))                         \
+      {                                                                                      \
+        fprintf(stderr, #tag " insert failed at index %zu\n", i);                            \
+        delete_fn(root, NULL);                                                               \
+        return false;                                                                        \
+      }                                                                                      \
+      clock_gettime(CLOCK_MONOTONIC, &end);                                                  \
+      insert_times[i] = elapsed_ms(&start, &end);                                            \
+    }                                                                                        \
+                                                                                             \
+    for (size_t i = 0; i < count; ++i)                                                       \
+    {                                                                                        \
+      clock_gettime(CLOCK_MONOTONIC, &start);                                                \
+      void *found = search_fn(root, &search_order[i], cmp_int);                              \
+      clock_gettime(CLOCK_MONOTONIC, &end);                                                  \
+      search_times[i] = elapsed_ms(&start, &end);                                            \
+      if (!found)                                                                            \
+      {                                                                                      \
+        fprintf(stderr, #tag " search missed key %d\n", search_order[i]);                    \
+        delete_fn(root, NULL);                                                               \
+        return false;                                                                        \
+      }                                                                                      \
+    }                                                                                        \
+                                                                                             \
+    for (size_t i = 0; i < count; ++i)                                                       \
+    {                                                                                        \
+      clock_gettime(CLOCK_MONOTONIC, &start);                                                \
+      if (!remove_fn(&root, &delete_order[i], cmp_int))                                      \
+      {                                                                                      \
+        fprintf(stderr, #tag " delete failed for key %d\n", delete_order[i]);                \
+        delete_fn(root, NULL);                                                               \
+        return false;                                                                        \
+      }                                                                                      \
+      clock_gettime(CLOCK_MONOTONIC, &end);                                                  \
+      delete_times[i] = elapsed_ms(&start, &end);                                            \
+    }                                                                                        \
+                                                                                             \
+    delete_fn(root, NULL);                                                                   \
+    return true;                                                                             \
   }
 
-DEFINE_COLLECT_FUNCTIONS (avl, AvlTree, avl_tree_insert_sorted, avl_tree_search,
-                          avl_tree_remove_sorted, avl_tree_delete)
-DEFINE_COLLECT_FUNCTIONS (rbt, RbtTree, rbt_tree_insert_sorted, rbt_tree_search,
-                          rbt_tree_remove_sorted, rbt_tree_delete)
+DEFINE_COLLECT_FUNCTIONS(avl, AvlTree, avl_tree_insert_sorted, avl_tree_search,
+                         avl_tree_remove_sorted, avl_tree_delete)
+DEFINE_COLLECT_FUNCTIONS(rbt, RbtTree, rbt_tree_insert_sorted, rbt_tree_search,
+                         rbt_tree_remove_sorted, rbt_tree_delete)
 
-int
-main (int argc, char **argv)
+int main(int argc, char **argv)
 {
   size_t count = 1000;
-  unsigned int seed = (unsigned int) time (NULL);
+  unsigned int seed = (unsigned int)time(NULL);
   const char *prefix = "exec_time";
 
   if (argc > 1)
+  {
+    char *endptr = NULL;
+    errno = 0;
+    unsigned long parsed = strtoul(argv[1], &endptr, 10);
+    if (errno != 0 || endptr == argv[1] || *endptr != '\0')
     {
-      char *endptr = NULL;
-      errno = 0;
-      unsigned long parsed = strtoul (argv[1], &endptr, 10);
-      if (errno != 0 || endptr == argv[1] || *endptr != '\0')
-        {
-          fprintf (stderr, "Invalid item count: %s\n", argv[1]);
-          return EXIT_FAILURE;
-        }
-      if (parsed == 0)
-        {
-          fprintf (stderr, "Item count must be greater than zero.\n");
-          return EXIT_FAILURE;
-        }
-      count = (size_t) parsed;
+      fprintf(stderr, "Invalid item count: %s\n", argv[1]);
+      return EXIT_FAILURE;
     }
+    if (parsed == 0)
+    {
+      fprintf(stderr, "Item count must be greater than zero.\n");
+      return EXIT_FAILURE;
+    }
+    count = (size_t)parsed;
+  }
 
   if (argc > 2)
+  {
+    char *endptr = NULL;
+    errno = 0;
+    unsigned long parsed = strtoul(argv[2], &endptr, 10);
+    if (errno != 0 || endptr == argv[2] || *endptr != '\0')
     {
-      char *endptr = NULL;
-      errno = 0;
-      unsigned long parsed = strtoul (argv[2], &endptr, 10);
-      if (errno != 0 || endptr == argv[2] || *endptr != '\0')
-        {
-          fprintf (stderr, "Invalid seed: %s\n", argv[2]);
-          return EXIT_FAILURE;
-        }
-      seed = (unsigned int) parsed;
+      fprintf(stderr, "Invalid seed: %s\n", argv[2]);
+      return EXIT_FAILURE;
     }
+    seed = (unsigned int)parsed;
+  }
 
   if (argc > 3)
-    {
-      prefix = argv[3];
-    }
+  {
+    prefix = argv[3];
+  }
 
-  srand (seed);
+  srand(seed);
 
-  int *base = malloc (sizeof (int) * count);
-  int *insert_order = malloc (sizeof (int) * count);
-  int *search_order = malloc (sizeof (int) * count);
-  int *delete_order = malloc (sizeof (int) * count);
+  int *base = malloc(sizeof(int) * count);
+  int *insert_order = malloc(sizeof(int) * count);
+  int *search_order = malloc(sizeof(int) * count);
+  int *delete_order = malloc(sizeof(int) * count);
 
-  double *avl_insert_times = malloc (sizeof (double) * count);
-  double *avl_search_times = malloc (sizeof (double) * count);
-  double *avl_delete_times = malloc (sizeof (double) * count);
+  double *avl_insert_times = malloc(sizeof(double) * count);
+  double *avl_search_times = malloc(sizeof(double) * count);
+  double *avl_delete_times = malloc(sizeof(double) * count);
 
-  double *rbt_insert_times = malloc (sizeof (double) * count);
-  double *rbt_search_times = malloc (sizeof (double) * count);
-  double *rbt_delete_times = malloc (sizeof (double) * count);
+  double *rbt_insert_times = malloc(sizeof(double) * count);
+  double *rbt_search_times = malloc(sizeof(double) * count);
+  double *rbt_delete_times = malloc(sizeof(double) * count);
 
   if (!base || !insert_order || !search_order || !delete_order ||
       !avl_insert_times || !avl_search_times || !avl_delete_times ||
       !rbt_insert_times || !rbt_search_times || !rbt_delete_times)
-    {
-      fprintf (stderr, "Allocation failure for %zu elements.\n", count);
-      free (base);
-      free (insert_order);
-      free (search_order);
-      free (delete_order);
-      free (avl_insert_times);
-      free (avl_search_times);
-      free (avl_delete_times);
-      free (rbt_insert_times);
-      free (rbt_search_times);
-      free (rbt_delete_times);
-      return EXIT_FAILURE;
-    }
+  {
+    fprintf(stderr, "Allocation failure for %zu elements.\n", count);
+    free(base);
+    free(insert_order);
+    free(search_order);
+    free(delete_order);
+    free(avl_insert_times);
+    free(avl_search_times);
+    free(avl_delete_times);
+    free(rbt_insert_times);
+    free(rbt_search_times);
+    free(rbt_delete_times);
+    return EXIT_FAILURE;
+  }
 
   for (size_t i = 0; i < count; ++i)
-    {
-      base[i] = (int) i;
-    }
+  {
+    base[i] = (int)i;
+  }
 
-  memcpy (insert_order, base, sizeof (int) * count);
-  memcpy (search_order, base, sizeof (int) * count);
-  memcpy (delete_order, base, sizeof (int) * count);
+  memcpy(insert_order, base, sizeof(int) * count);
+  memcpy(search_order, base, sizeof(int) * count);
+  memcpy(delete_order, base, sizeof(int) * count);
 
-  shuffle_ints (insert_order, count);
-  shuffle_ints (search_order, count);
-  shuffle_ints (delete_order, count);
+  shuffle_ints(insert_order, count);
+  shuffle_ints(search_order, count);
+  shuffle_ints(delete_order, count);
 
-  bool ok = collect_timings_avl (insert_order, search_order, delete_order, count,
-                                 avl_insert_times, avl_search_times, avl_delete_times);
+  bool ok = collect_timings_avl(insert_order, search_order, delete_order, count,
+                                avl_insert_times, avl_search_times, avl_delete_times);
   if (!ok)
-    {
-      fprintf (stderr, "Failed while benchmarking AVL tree.\n");
-      goto cleanup;
-    }
+  {
+    fprintf(stderr, "Failed while benchmarking AVL tree.\n");
+    goto cleanup;
+  }
 
-  ok = collect_timings_rbt (insert_order, search_order, delete_order, count,
-                            rbt_insert_times, rbt_search_times, rbt_delete_times);
+  ok = collect_timings_rbt(insert_order, search_order, delete_order, count,
+                           rbt_insert_times, rbt_search_times, rbt_delete_times);
   if (!ok)
-    {
-      fprintf (stderr, "Failed while benchmarking red-black tree.\n");
-      goto cleanup;
-    }
+  {
+    fprintf(stderr, "Failed while benchmarking red-black tree.\n");
+    goto cleanup;
+  }
 
-  char *avl_filename = build_filename (prefix, "avl.csv");
-  char *rbt_filename = build_filename (prefix, "rbt.csv");
+  char *avl_filename = build_filename(prefix, "avl.csv");
+  char *rbt_filename = build_filename(prefix, "rbt.csv");
   if (!avl_filename || !rbt_filename)
-    {
-      fprintf (stderr, "Failed to build CSV file names.\n");
-      free (avl_filename);
-      free (rbt_filename);
-      goto cleanup;
-    }
+  {
+    fprintf(stderr, "Failed to build CSV file names.\n");
+    free(avl_filename);
+    free(rbt_filename);
+    goto cleanup;
+  }
 
-  ok = write_csv (avl_filename, avl_insert_times, avl_search_times, avl_delete_times, count);
+  ok = write_csv(avl_filename, avl_insert_times, avl_search_times, avl_delete_times, count);
   if (!ok)
-    {
-      fprintf (stderr, "Unable to create %s.\n", avl_filename);
-      free (avl_filename);
-      free (rbt_filename);
-      goto cleanup;
-    }
+  {
+    fprintf(stderr, "Unable to create %s.\n", avl_filename);
+    free(avl_filename);
+    free(rbt_filename);
+    goto cleanup;
+  }
 
-  ok = write_csv (rbt_filename, rbt_insert_times, rbt_search_times, rbt_delete_times, count);
+  ok = write_csv(rbt_filename, rbt_insert_times, rbt_search_times, rbt_delete_times, count);
   if (!ok)
-    {
-      fprintf (stderr, "Unable to create %s.\n", rbt_filename);
-      free (avl_filename);
-      free (rbt_filename);
-      goto cleanup;
-    }
+  {
+    fprintf(stderr, "Unable to create %s.\n", rbt_filename);
+    free(avl_filename);
+    free(rbt_filename);
+    goto cleanup;
+  }
 
-  printf ("Wrote AVL timings to %s\n", avl_filename);
-  printf ("Wrote Red-Black timings to %s\n", rbt_filename);
+  printf("Wrote AVL timings to %s\n", avl_filename);
+  printf("Wrote Red-Black timings to %s\n", rbt_filename);
 
-  free (avl_filename);
-  free (rbt_filename);
+  free(avl_filename);
+  free(rbt_filename);
 
 cleanup:
-  free (base);
-  free (insert_order);
-  free (search_order);
-  free (delete_order);
-  free (avl_insert_times);
-  free (avl_search_times);
-  free (avl_delete_times);
-  free (rbt_insert_times);
-  free (rbt_search_times);
-  free (rbt_delete_times);
+  free(base);
+  free(insert_order);
+  free(search_order);
+  free(delete_order);
+  free(avl_insert_times);
+  free(avl_search_times);
+  free(avl_delete_times);
+  free(rbt_insert_times);
+  free(rbt_search_times);
+  free(rbt_delete_times);
   return ok ? EXIT_SUCCESS : EXIT_FAILURE;
 }
