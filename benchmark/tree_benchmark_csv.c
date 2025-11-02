@@ -42,7 +42,7 @@
 #define min_value_node avl_min_value_node
 #define set avl_set
 // We include the .c file directly to apply the macros
-#include "../src/tree/tree-avl.c"
+#include "../src/tree-avl/tree-avl.c"
 #undef set
 #undef min_value_node
 #undef rotate_right
@@ -68,137 +68,6 @@
 #undef tree_new
 #undef _TreeNode
 #undef Tree
-
-/* --- Auxiliary AVL deletion helpers (since src/tree/tree-avl.c has no delete) --- */
-
-static size_t avl_payload_size = sizeof(int);
-
-static void avl_update_balance_node(AvlTree node)
-{
-    if (!node)
-        return;
-    int hl = (int)avl_tree_height(node->left);
-    int hr = (int)avl_tree_height(node->right);
-    node->balance = hl - hr;
-}
-
-static AvlTree avl_rotate_left_local(AvlTree A)
-{
-    if (!A || !A->right)
-        return A;
-
-    AvlTree B = A->right;
-    AvlTree b = B->left;
-
-    avl_tree_set_left(B, A);
-    avl_tree_set_right(A, b);
-
-    B->parent = A->parent;
-    avl_update_balance_node(A);
-    avl_update_balance_node(B);
-    return B;
-}
-
-static AvlTree avl_rotate_right_local(AvlTree B)
-{
-    if (!B || !B->left)
-        return B;
-
-    AvlTree A = B->left;
-    AvlTree b = A->right;
-
-    avl_tree_set_right(A, B);
-    avl_tree_set_left(B, b);
-
-    A->parent = B->parent;
-    avl_update_balance_node(B);
-    avl_update_balance_node(A);
-    return A;
-}
-
-bool avl_tree_remove_sorted(AvlTree *ptree,
-                            const void *data,
-                            int (*compare)(const void *, const void *))
-{
-    if (!ptree || !*ptree)
-        return false;
-
-    AvlTree root = *ptree;
-    int cmp = compare(data, root->data);
-
-    if (cmp < 0)
-    {
-        if (!avl_tree_remove_sorted(&root->left, data, compare))
-            return false;
-        if (root->left)
-            root->left->parent = root;
-    }
-    else if (cmp > 0)
-    {
-        if (!avl_tree_remove_sorted(&root->right, data, compare))
-            return false;
-        if (root->right)
-            root->right->parent = root;
-    }
-    else
-    {
-        AvlTree node_to_delete = root;
-
-        if (!root->left || !root->right)
-        {
-            AvlTree child = root->left ? root->left : root->right;
-            if (child)
-                child->parent = root->parent;
-            *ptree = child;
-            free(node_to_delete);
-        }
-        else
-        {
-            AvlTree succ = root->right;
-            while (succ->left)
-                succ = succ->left;
-            memcpy(root->data, succ->data, avl_payload_size);
-            avl_tree_remove_sorted(&root->right, succ->data, compare);
-            if (root->right)
-                root->right->parent = root;
-        }
-    }
-
-    if (*ptree == NULL)
-        return true;
-
-    root = *ptree;
-    avl_update_balance_node(root);
-
-    if (root->balance > 1)
-    {
-        if (root->left && root->left->balance < 0)
-        {
-            root->left = avl_rotate_left_local(root->left);
-            if (root->left)
-                root->left->parent = root;
-        }
-        root = avl_rotate_right_local(root);
-    }
-    else if (root->balance < -1)
-    {
-        if (root->right && root->right->balance > 0)
-        {
-            root->right = avl_rotate_right_local(root->right);
-            if (root->right)
-                root->right->parent = root;
-        }
-        root = avl_rotate_left_local(root);
-    }
-
-    *ptree = root;
-    if (root->left)
-        root->left->parent = root;
-    if (root->right)
-        root->right->parent = root;
-    avl_update_balance_node(root);
-    return true;
-}
 
 /*
  * =========================================================================
