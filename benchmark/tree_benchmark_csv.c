@@ -1,3 +1,6 @@
+// Save this as benchmark/BENCHMARK_DUONG.c
+
+// FIX for CLOCK_MONOTONIC (must be at the very top)
 #define _POSIX_C_SOURCE 200809L
 
 #include <errno.h>
@@ -8,8 +11,10 @@
 #include <time.h>
 
 /*
- * Import the AVL implementation under a dedicated prefix. The function renames
- * prevent clashes once we also include the red-black implementation below.
+ * =========================================================================
+ * IMPORT AVL IMPLEMENTATION
+ * Rename all functions and structs with an 'avl_' prefix
+ * =========================================================================
  */
 #define Tree AvlTree
 #define _TreeNode _AvlTreeNode
@@ -36,7 +41,8 @@
 #define rotate_right avl_rotate_right
 #define min_value_node avl_min_value_node
 #define set avl_set
-#include "../src/tree-avl/tree-avl.c"
+// We include the .c file directly to apply the macros
+#include "../src/tree/tree-avl.c"
 #undef set
 #undef min_value_node
 #undef rotate_right
@@ -63,9 +69,142 @@
 #undef _TreeNode
 #undef Tree
 
+/* --- Auxiliary AVL deletion helpers (since src/tree/tree-avl.c has no delete) --- */
+
+static size_t avl_payload_size = sizeof(int);
+
+static void avl_update_balance_node(AvlTree node)
+{
+    if (!node)
+        return;
+    int hl = (int)avl_tree_height(node->left);
+    int hr = (int)avl_tree_height(node->right);
+    node->balance = hl - hr;
+}
+
+static AvlTree avl_rotate_left_local(AvlTree A)
+{
+    if (!A || !A->right)
+        return A;
+
+    AvlTree B = A->right;
+    AvlTree b = B->left;
+
+    avl_tree_set_left(B, A);
+    avl_tree_set_right(A, b);
+
+    B->parent = A->parent;
+    avl_update_balance_node(A);
+    avl_update_balance_node(B);
+    return B;
+}
+
+static AvlTree avl_rotate_right_local(AvlTree B)
+{
+    if (!B || !B->left)
+        return B;
+
+    AvlTree A = B->left;
+    AvlTree b = A->right;
+
+    avl_tree_set_right(A, B);
+    avl_tree_set_left(B, b);
+
+    A->parent = B->parent;
+    avl_update_balance_node(B);
+    avl_update_balance_node(A);
+    return A;
+}
+
+bool avl_tree_remove_sorted(AvlTree *ptree,
+                            const void *data,
+                            int (*compare)(const void *, const void *))
+{
+    if (!ptree || !*ptree)
+        return false;
+
+    AvlTree root = *ptree;
+    int cmp = compare(data, root->data);
+
+    if (cmp < 0)
+    {
+        if (!avl_tree_remove_sorted(&root->left, data, compare))
+            return false;
+        if (root->left)
+            root->left->parent = root;
+    }
+    else if (cmp > 0)
+    {
+        if (!avl_tree_remove_sorted(&root->right, data, compare))
+            return false;
+        if (root->right)
+            root->right->parent = root;
+    }
+    else
+    {
+        AvlTree node_to_delete = root;
+
+        if (!root->left || !root->right)
+        {
+            AvlTree child = root->left ? root->left : root->right;
+            if (child)
+                child->parent = root->parent;
+            *ptree = child;
+            free(node_to_delete);
+        }
+        else
+        {
+            AvlTree succ = root->right;
+            while (succ->left)
+                succ = succ->left;
+            memcpy(root->data, succ->data, avl_payload_size);
+            avl_tree_remove_sorted(&root->right, succ->data, compare);
+            if (root->right)
+                root->right->parent = root;
+        }
+    }
+
+    if (*ptree == NULL)
+        return true;
+
+    root = *ptree;
+    avl_update_balance_node(root);
+
+    if (root->balance > 1)
+    {
+        if (root->left && root->left->balance < 0)
+        {
+            root->left = avl_rotate_left_local(root->left);
+            if (root->left)
+                root->left->parent = root;
+        }
+        root = avl_rotate_right_local(root);
+    }
+    else if (root->balance < -1)
+    {
+        if (root->right && root->right->balance > 0)
+        {
+            root->right = avl_rotate_right_local(root->right);
+            if (root->right)
+                root->right->parent = root;
+        }
+        root = avl_rotate_left_local(root);
+    }
+
+    *ptree = root;
+    if (root->left)
+        root->left->parent = root;
+    if (root->right)
+        root->right->parent = root;
+    avl_update_balance_node(root);
+    return true;
+}
+
 /*
- * Import the red-black tree implementation, again shielding the symbols with
- * a prefix to avoid collisions.
+ * =========================================================================
+ * IMPORT RBT IMPLEMENTATION
+ * Rename all functions and structs with an 'rbt_' prefix
+ * =========================================================================
  */
 #define Tree RbtTree
 #define _TreeNode _RbtTreeNode
@@ -96,6 +235,7 @@
 #define transplant rbt_transplant
 #define min_value_node rbt_min_value_node
 #define delete_fixup rbt_delete_fixup
+// Include the .c file for the RBT
 #include "../src/tree-rbt/tree-rbt.c"
 #undef delete_fixup
 #undef min_value_node
@@ -127,296 +267,147 @@
 #undef _TreeNode
 #undef Tree
 
-static double
-elapsed_ms(const struct timespec *start, const struct timespec *end)
-{
-  time_t secs = end->tv_sec - start->tv_sec;
-  long nsecs = end->tv_nsec - start->tv_nsec;
-  if (nsecs < 0)
-  {
-    --secs;
-    nsecs += 1000000000L;
-  }
-  return (double)secs * 1000.0 + (double)nsecs / 1e6;
+
+// --- CONFIGURATION ---
+#define N_START 50
+#define N_MAX 1000
+#define N_INCREMENT 50
+#define NUM_TRIALS 50 // Average 50 runs
+#define OUTPUT_FILE "benchmark_results.csv"
+
+// --- HELPER FUNCTIONS ---
+
+// Integer comparison function
+int cmpInt(const void *a, const void *b) {
+    return (*(const int *)a - *(const int *)b);
 }
 
-static int
-cmp_int(const void *a, const void *b)
-{
-  int ia = *(const int *)a;
-  int ib = *(const int *)b;
-  if (ia < ib)
-    return -1;
-  if (ia > ib)
-    return 1;
-  return 0;
-}
-
-static void
-shuffle_ints(int *array, size_t length)
-{
-  if (length < 2)
-    return;
-  for (size_t i = length - 1; i > 0; --i)
-  {
-    size_t j = (size_t)(rand() % (int)(i + 1));
-    int tmp = array[i];
-    array[i] = array[j];
-    array[j] = tmp;
-  }
-}
-
-static char *
-build_filename(const char *prefix, const char *suffix)
-{
-  size_t len = strlen(prefix) + strlen(suffix) + 2; /* underscore + NUL */
-  char *path = malloc(len);
-  if (!path)
-    return NULL;
-  snprintf(path, len, "%s_%s", prefix, suffix);
-  return path;
-}
-
-static bool
-write_csv(const char *filepath,
-          const double *insert_times,
-          const double *search_times,
-          const double *delete_times,
-          size_t count)
-{
-  FILE *fp = fopen(filepath, "w");
-  if (!fp)
-  {
-    fprintf(stderr, "Unable to open %s for writing.\n", filepath);
-    return false;
-  }
-
-  for (size_t i = 0; i < count; ++i)
-  {
-    if (fprintf(fp, "%.6f,%.6f,%.6f\n",
-                insert_times[i],
-                search_times[i],
-                delete_times[i]) < 0)
-    {
-      fprintf(stderr, "Failed while writing to %s.\n", filepath);
-      fclose(fp);
-      return false;
+// Fisher-Yates shuffle
+void shuffle(int *array, size_t n) {
+    if (n > 1) {
+        for (size_t i = 0; i < n - 1; i++) {
+            size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
+            int t = array[j];
+            array[j] = array[i];
+            array[i] = t;
+        }
     }
-  }
-
-  fclose(fp);
-  return true;
 }
 
-#define DEFINE_COLLECT_FUNCTIONS(tag, tree_type, insert_fn, search_fn, remove_fn, delete_fn) \
-  static bool collect_timings_##tag(const int *insert_order,                                 \
-                                    const int *search_order,                                 \
-                                    const int *delete_order,                                 \
-                                    size_t count,                                            \
-                                    double *insert_times,                                    \
-                                    double *search_times,                                    \
-                                    double *delete_times)                                    \
-  {                                                                                          \
-    tree_type root = NULL;                                                                   \
-    struct timespec start, end;                                                              \
-                                                                                             \
-    for (size_t i = 0; i < count; ++i)                                                       \
-    {                                                                                        \
-      clock_gettime(CLOCK_MONOTONIC, &start);                                                \
-      if (!insert_fn(&root, &insert_order[i], sizeof(int), cmp_int))                         \
-      {                                                                                      \
-        fprintf(stderr, #tag " insert failed at index %zu\n", i);                            \
-        delete_fn(root, NULL);                                                               \
-        return false;                                                                        \
-      }                                                                                      \
-      clock_gettime(CLOCK_MONOTONIC, &end);                                                  \
-      insert_times[i] = elapsed_ms(&start, &end);                                            \
-    }                                                                                        \
-                                                                                             \
-    for (size_t i = 0; i < count; ++i)                                                       \
-    {                                                                                        \
-      clock_gettime(CLOCK_MONOTONIC, &start);                                                \
-      void *found = search_fn(root, &search_order[i], cmp_int);                              \
-      clock_gettime(CLOCK_MONOTONIC, &end);                                                  \
-      search_times[i] = elapsed_ms(&start, &end);                                            \
-      if (!found)                                                                            \
-      {                                                                                      \
-        fprintf(stderr, #tag " search missed key %d\n", search_order[i]);                    \
-        delete_fn(root, NULL);                                                               \
-        return false;                                                                        \
-      }                                                                                      \
-    }                                                                                        \
-                                                                                             \
-    for (size_t i = 0; i < count; ++i)                                                       \
-    {                                                                                        \
-      clock_gettime(CLOCK_MONOTONIC, &start);                                                \
-      if (!remove_fn(&root, &delete_order[i], cmp_int))                                      \
-      {                                                                                      \
-        fprintf(stderr, #tag " delete failed for key %d\n", delete_order[i]);                \
-        delete_fn(root, NULL);                                                               \
-        return false;                                                                        \
-      }                                                                                      \
-      clock_gettime(CLOCK_MONOTONIC, &end);                                                  \
-      delete_times[i] = elapsed_ms(&start, &end);                                            \
-    }                                                                                        \
-                                                                                             \
-    delete_fn(root, NULL);                                                                   \
-    return true;                                                                             \
-  }
-
-DEFINE_COLLECT_FUNCTIONS(avl, AvlTree, avl_tree_insert_sorted, avl_tree_search,
-                         avl_tree_remove_sorted, avl_tree_delete)
-DEFINE_COLLECT_FUNCTIONS(rbt, RbtTree, rbt_tree_insert_sorted, rbt_tree_search,
-                         rbt_tree_remove_sorted, rbt_tree_delete)
-
-int main(int argc, char **argv)
-{
-  size_t count = 1000;
-  unsigned int seed = (unsigned int)time(NULL);
-  const char *prefix = "exec_time";
-
-  if (argc > 1)
-  {
-    char *endptr = NULL;
-    errno = 0;
-    unsigned long parsed = strtoul(argv[1], &endptr, 10);
-    if (errno != 0 || endptr == argv[1] || *endptr != '\0')
-    {
-      fprintf(stderr, "Invalid item count: %s\n", argv[1]);
-      return EXIT_FAILURE;
+// Helper to get high-resolution time in milliseconds
+double get_time_ms(const struct timespec *start, const struct timespec *end) {
+    time_t secs = end->tv_sec - start->tv_sec;
+    long nsecs = end->tv_nsec - start->tv_nsec;
+    if (nsecs < 0) {
+        --secs;
+        nsecs += 1000000000L;
     }
-    if (parsed == 0)
-    {
-      fprintf(stderr, "Item count must be greater than zero.\n");
-      return EXIT_FAILURE;
+    return (double)secs * 1000.0 + (double)nsecs / 1e6;
+}
+
+// --- MAIN BENCHMARK PROGRAM ---
+
+int main() {
+    FILE *csv_file = fopen(OUTPUT_FILE, "w");
+    if (csv_file == NULL) {
+        perror("Error opening output file");
+        return 1;
     }
-    count = (size_t)parsed;
-  }
+    
+    struct timespec start_ts, end_ts;
+    srand((unsigned int)time(NULL));
 
-  if (argc > 2)
-  {
-    char *endptr = NULL;
-    errno = 0;
-    unsigned long parsed = strtoul(argv[2], &endptr, 10);
-    if (errno != 0 || endptr == argv[2] || *endptr != '\0')
-    {
-      fprintf(stderr, "Invalid seed: %s\n", argv[2]);
-      return EXIT_FAILURE;
+    fprintf(csv_file, "N,AVL_Insert_Time,RBT_Insert_Time,AVL_Search_Time,RBT_Search_Time,AVL_Delete_Time,RBT_Delete_Time\n");
+    printf("N, AVL_Insert (ms), RBT_Insert (ms), AVL_Search (ms), RBT_Search (ms), AVL_Delete (ms), RBT_Delete (ms)\n");
+
+    for (int N = N_START; N <= N_MAX; N += N_INCREMENT) {
+        
+        double total_avl_insert = 0, total_rbt_insert = 0;
+        double total_avl_search = 0, total_rbt_search = 0;
+        double total_avl_delete = 0, total_rbt_delete = 0;
+
+        for (int t = 0; t < NUM_TRIALS; t++) {
+            
+            int *data = malloc(N * sizeof(int));
+            int *shuffled_data = malloc(N * sizeof(int));
+            for (int i = 0; i < N; i++) {
+                data[i] = rand();
+                shuffled_data[i] = data[i];
+            }
+            shuffle(shuffled_data, N);
+
+            // --- 1. AVL Test ---
+            AvlTree avl_tree = avl_tree_new();
+            clock_gettime(CLOCK_MONOTONIC, &start_ts);
+            for (int i = 0; i < N; i++) {
+                avl_tree_insert_sorted(&avl_tree, &data[i], sizeof(int), cmpInt);
+            }
+            clock_gettime(CLOCK_MONOTONIC, &end_ts);
+            total_avl_insert += get_time_ms(&start_ts, &end_ts);
+
+            clock_gettime(CLOCK_MONOTONIC, &start_ts);
+            for (int i = 0; i < N; i++) {
+                avl_tree_search(avl_tree, &data[i], cmpInt);
+            }
+            clock_gettime(CLOCK_MONOTONIC, &end_ts);
+            total_avl_search += get_time_ms(&start_ts, &end_ts);
+
+            clock_gettime(CLOCK_MONOTONIC, &start_ts);
+            for (int i = 0; i < N; i++) {
+                avl_tree_remove_sorted(&avl_tree, &shuffled_data[i], cmpInt);
+            }
+            clock_gettime(CLOCK_MONOTONIC, &end_ts);
+            total_avl_delete += get_time_ms(&start_ts, &end_ts);
+            avl_tree_delete(avl_tree, NULL);
+
+            // --- 2. RBT Test ---
+            RbtTree rbt_tree = rbt_tree_new();
+            clock_gettime(CLOCK_MONOTONIC, &start_ts);
+            for (int i = 0; i < N; i++) {
+                rbt_tree_insert_sorted(&rbt_tree, &data[i], sizeof(int), cmpInt);
+            }
+            clock_gettime(CLOCK_MONOTONIC, &end_ts);
+            total_rbt_insert += get_time_ms(&start_ts, &end_ts);
+
+            clock_gettime(CLOCK_MONOTONIC, &start_ts);
+            for (int i = 0; i < N; i++) {
+                rbt_tree_search(rbt_tree, &data[i], cmpInt);
+            }
+            clock_gettime(CLOCK_MONOTONIC, &end_ts);
+            total_rbt_search += get_time_ms(&start_ts, &end_ts);
+
+            clock_gettime(CLOCK_MONOTONIC, &start_ts);
+            for (int i = 0; i < N; i++) {
+                rbt_tree_remove_sorted(&rbt_tree, &shuffled_data[i], cmpInt);
+            }
+            clock_gettime(CLOCK_MONOTONIC, &end_ts);
+            total_rbt_delete += get_time_ms(&start_ts, &end_ts);
+            rbt_tree_delete(rbt_tree, NULL);
+
+            free(data);
+            free(shuffled_data);
+        }
+
+        // Calculate and print the final averages (in milliseconds)
+        double final_avl_insert = total_avl_insert / NUM_TRIALS;
+        double final_rbt_insert = total_rbt_insert / NUM_TRIALS;
+        double final_avl_search = total_avl_search / NUM_TRIALS;
+        double final_rbt_search = total_rbt_search / NUM_TRIALS;
+        double final_avl_delete = total_avl_delete / NUM_TRIALS;
+        double final_rbt_delete = total_rbt_delete / NUM_TRIALS;
+
+        fprintf(csv_file, "%d,%f,%f,%f,%f,%f,%f\n", N,
+                final_avl_insert, final_rbt_insert,
+                final_avl_search, final_rbt_search,
+                final_avl_delete, final_rbt_delete);
+        
+        printf("%d, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f\n", N,
+               final_avl_insert, final_rbt_insert,
+               final_avl_search, final_rbt_search,
+               final_avl_delete, final_rbt_delete);
     }
-    seed = (unsigned int)parsed;
-  }
 
-  if (argc > 3)
-  {
-    prefix = argv[3];
-  }
-
-  srand(seed);
-
-  int *base = malloc(sizeof(int) * count);
-  int *insert_order = malloc(sizeof(int) * count);
-  int *search_order = malloc(sizeof(int) * count);
-  int *delete_order = malloc(sizeof(int) * count);
-
-  double *avl_insert_times = malloc(sizeof(double) * count);
-  double *avl_search_times = malloc(sizeof(double) * count);
-  double *avl_delete_times = malloc(sizeof(double) * count);
-
-  double *rbt_insert_times = malloc(sizeof(double) * count);
-  double *rbt_search_times = malloc(sizeof(double) * count);
-  double *rbt_delete_times = malloc(sizeof(double) * count);
-
-  if (!base || !insert_order || !search_order || !delete_order ||
-      !avl_insert_times || !avl_search_times || !avl_delete_times ||
-      !rbt_insert_times || !rbt_search_times || !rbt_delete_times)
-  {
-    fprintf(stderr, "Allocation failure for %zu elements.\n", count);
-    free(base);
-    free(insert_order);
-    free(search_order);
-    free(delete_order);
-    free(avl_insert_times);
-    free(avl_search_times);
-    free(avl_delete_times);
-    free(rbt_insert_times);
-    free(rbt_search_times);
-    free(rbt_delete_times);
-    return EXIT_FAILURE;
-  }
-
-  for (size_t i = 0; i < count; ++i)
-  {
-    base[i] = (int)i;
-  }
-
-  memcpy(insert_order, base, sizeof(int) * count);
-  memcpy(search_order, base, sizeof(int) * count);
-  memcpy(delete_order, base, sizeof(int) * count);
-
-  shuffle_ints(insert_order, count);
-  shuffle_ints(search_order, count);
-  shuffle_ints(delete_order, count);
-
-  bool ok = collect_timings_avl(insert_order, search_order, delete_order, count,
-                                avl_insert_times, avl_search_times, avl_delete_times);
-  if (!ok)
-  {
-    fprintf(stderr, "Failed while benchmarking AVL tree.\n");
-    goto cleanup;
-  }
-
-  ok = collect_timings_rbt(insert_order, search_order, delete_order, count,
-                           rbt_insert_times, rbt_search_times, rbt_delete_times);
-  if (!ok)
-  {
-    fprintf(stderr, "Failed while benchmarking red-black tree.\n");
-    goto cleanup;
-  }
-
-  char *avl_filename = build_filename(prefix, "avl.csv");
-  char *rbt_filename = build_filename(prefix, "rbt.csv");
-  if (!avl_filename || !rbt_filename)
-  {
-    fprintf(stderr, "Failed to build CSV file names.\n");
-    free(avl_filename);
-    free(rbt_filename);
-    goto cleanup;
-  }
-
-  ok = write_csv(avl_filename, avl_insert_times, avl_search_times, avl_delete_times, count);
-  if (!ok)
-  {
-    fprintf(stderr, "Unable to create %s.\n", avl_filename);
-    free(avl_filename);
-    free(rbt_filename);
-    goto cleanup;
-  }
-
-  ok = write_csv(rbt_filename, rbt_insert_times, rbt_search_times, rbt_delete_times, count);
-  if (!ok)
-  {
-    fprintf(stderr, "Unable to create %s.\n", rbt_filename);
-    free(avl_filename);
-    free(rbt_filename);
-    goto cleanup;
-  }
-
-  printf("Wrote AVL timings to %s\n", avl_filename);
-  printf("Wrote Red-Black timings to %s\n", rbt_filename);
-
-  free(avl_filename);
-  free(rbt_filename);
-
-cleanup:
-  free(base);
-  free(insert_order);
-  free(search_order);
-  free(delete_order);
-  free(avl_insert_times);
-  free(avl_search_times);
-  free(avl_delete_times);
-  free(rbt_insert_times);
-  free(rbt_search_times);
-  free(rbt_delete_times);
-  return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+    fclose(csv_file);
+    printf("\nBenchmark complete. Results saved to %s\n", OUTPUT_FILE);
+    return 0;
 }
