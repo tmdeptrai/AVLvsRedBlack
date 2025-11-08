@@ -1,4 +1,0 @@
-/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/debug/tmp/lib/libtree-avl.so
-/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/debug/tmp/include/tree-avl.h
-/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/debug/tmp/share/pkgconfig/tree-avl.pc
-/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/debug/tmp/cmake/avlTreeConfig.cmake

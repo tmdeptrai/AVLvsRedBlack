@@ -8,10 +8,11 @@ typedef struct _TreeNode *Tree;
 
 struct _TreeNode
   {
-    Tree parent;
     Tree left;
     Tree right;
-    int balance;
+    Tree parent; // pointer to parent node
+    // size_t balance;
+    int balance; // balance = height(left) - height(right) 
     char data[1];
   };
 
@@ -65,5 +66,11 @@ int tree_sort (void *array,
                size_t size,
                int (*compare) (const void *, const void
 *));
+
+//New: BST Deletion + AVL REbalancing if needed
+// Return true if removed
+bool tree_remove_sorted(Tree *ptree,
+                        const void *data,
+                        int (*compare)(const void *, const void *));
 
 #endif

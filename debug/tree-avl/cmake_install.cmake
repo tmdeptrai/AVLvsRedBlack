@@ -1,8 +1,8 @@
-# Install script for directory: /home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/src/tree-avl
+# Install script for directory: /home/tmd/Desktop/AVLvsRedBlack/src/tree-avl
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/debug/tmp")
+  set(CMAKE_INSTALL_PREFIX "/home/tmd/Desktop/AVLvsRedBlack/debug/tmp")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
@@ -49,7 +49,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libtree-avl.so"
          RPATH "")
   endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/debug/tree-avl/libtree-avl.so")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/tmd/Desktop/AVLvsRedBlack/debug/tree-avl/libtree-avl.so")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libtree-avl.so" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libtree-avl.so")
     if(CMAKE_INSTALL_DO_STRIP)
@@ -62,15 +62,15 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE FILE FILES "/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/src/tree-avl/tree-avl.h")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE FILE FILES "/home/tmd/Desktop/AVLvsRedBlack/src/tree-avl/tree-avl.h")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "PkgConfig" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/pkgconfig" TYPE FILE FILES "/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/debug/tree-avl/tree-avl.pc")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/share/pkgconfig" TYPE FILE FILES "/home/tmd/Desktop/AVLvsRedBlack/debug/tree-avl/tree-avl.pc")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/cmake" TYPE FILE FILES "/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/debug/tree-avl/avlTreeConfig.cmake")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/cmake" TYPE FILE FILES "/home/tmd/Desktop/AVLvsRedBlack/debug/tree-avl/avlTreeConfig.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT)
@@ -81,5 +81,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/debug/tree-avl/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/tmd/Desktop/AVLvsRedBlack/debug/tree-avl/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

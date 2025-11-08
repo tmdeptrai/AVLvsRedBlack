@@ -1,4 +1,0 @@
-/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TEA/debug/tmp/lib/libtree-rbt.so
-/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TEA/debug/tmp/include/tree-rbt.h
-/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TEA/debug/tmp/share/pkgconfig/tree-rbt.pc
-/home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TEA/debug/tmp/cmake/rbtTreeConfig.cmake

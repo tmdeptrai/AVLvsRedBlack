@@ -1,5 +1,5 @@
 CMakeFiles/tree-avl.dir/tree-avl.c.o: \
- /home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/src/tree-avl/tree-avl.c \
+ /home/tmd/Desktop/AVLvsRedBlack/src/tree-avl/tree-avl.c \
  /usr/include/stdc-predef.h /usr/include/string.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -13,7 +13,7 @@ CMakeFiles/tree-avl.dir/tree-avl.c.o: \
  /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
  /usr/include/strings.h \
- /home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/src/tree-avl/tree-avl.h \
+ /home/tmd/Desktop/AVLvsRedBlack/src/tree-avl/tree-avl.h \
  /usr/include/stdlib.h /usr/include/x86_64-linux-gnu/bits/waitflags.h \
  /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
  /usr/include/x86_64-linux-gnu/bits/floatn.h \
@@ -45,4 +45,4 @@ CMakeFiles/tree-avl.dir/tree-avl.c.o: \
  /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h /usr/include/alloca.h \
  /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
  /usr/lib/gcc/x86_64-linux-gnu/13/include/stdbool.h \
- /home/tmd/Desktop/LaRochelleL3Info/StructuresDeDonnées/TP3-AVLTREE/src/tree-avl/min-max.h
+ /home/tmd/Desktop/AVLvsRedBlack/src/tree-avl/min-max.h
