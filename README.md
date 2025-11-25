@@ -1,17 +1,19 @@
 # AVL vs. Red-Black Tree Performance Analysis
+
 This group project implements and compares two generic, self-balancing binary search trees: the AVL Tree and the Red-Black Tree.
 
 ## 1. Project Structure
+
 <center>
 <img src="figures/project_structure.png" width=50%>
 </center>
 The repository includes:
 
-* Generic C implementations for an AVL Tree (`src/tree-avl/`) and a Red-Black Tree (`src/tree-rbt/`).
+- Generic C implementations for an AVL Tree (`src/tree-avl/`) and a Red-Black Tree (`src/tree-rbt/`).
 
-* Unit tests for both data structures (`test-tree-avl.c` and `test-tree-rbt.c`).
+- Unit tests for both data structures (`test-tree-avl.c` and `test-tree-rbt.c`).
 
-* A comprehensive benchmark program (`benchmark/tree_benchmark_csv.c`) to compare the performance of `insert`, `search`, and `delete` operations for both trees.
+- A comprehensive benchmark program (`benchmark/tree_benchmark_csv.c`) to compare the performance of `insert`, `search`, and `delete` operations for both trees.
 
 ## 2. Unit Tests
 
@@ -50,6 +52,7 @@ make && cd ../..
 **Run**
 
 After building, you can run the compiled test binaries from the root directory:
+
 ```bash
 # Run the AVL test
 ./debug/tree-avl/test-tree-avl
@@ -61,9 +64,52 @@ After building, you can run the compiled test binaries from the root directory:
 **Expected Output**
 
 If the implementations are correct, you will see the test output, including checks for integers, strings, and dictionary structures.
-```
 
+```
 ===== Test AVL avec int =====
+>Insertion (30)
+Post-order après insertion :
+Valeur : 30 (Balance:  0)
+
+...
+
+>Deletion (25)
+Post-order après suppression :
+Valeur : 10 (Balance:  0)
+Valeur : 50 (Balance:  0)
+Valeur : 40 (Balance: -1)
+Valeur : 20 (Balance: -1)
+
+===== Test AVL avec chaînes =====
+>Insertion (pomme)
+Post-order après insertion :
+Valeur du noeud : pomme      (Balance:  0)
+
+...
+
+>Insertion (abricot)
+Post-order après insertion :
+Valeur du noeud : pomme      (Balance:  0)
+Valeur du noeud : cerise     (Balance:  0)
+Valeur du noeud : abricot    (Balance:  0)
+Valeur du noeud : datte      (Balance:  0)
+Valeur du noeud : banane     (Balance: -1)
+
+===== Test AVL avec structures (mot, definition) =====
+>Insertion (chien)
+Post-order après insertion :
+{chien   : animal domestique } (Balance:  0)
+...
+
+>Insertion (voiture)
+Post-order après insertion :
+{arbre   : plante ligneuse   } (Balance:  0)
+{chat    : animal mignon     } (Balance:  1)
+{voiture : moyen de transport} (Balance:  0)
+{maison  : lieu d'habitation } (Balance: -1)
+{chien   : animal domestique } (Balance:  0)
+
+===== Test RBT avec int =====
 >Insertion (30)
 Post-order après insertion :
 Valeur : 30 (Color: BLACK)
@@ -75,7 +121,7 @@ Valeur : 30 (Color: BLACK)
 
 ...
 
-===== Test AVL avec chaînes =====
+===== Test RBT avec chaînes =====
 >Insertion (pomme)
 Post-order après insertion :
 Valeur : pomme      (Color: BLACK)
@@ -87,7 +133,7 @@ Valeur : pomme      (Color: BLACK)
 
 ...
 
-===== Test AVL avec structures (mot, definition) =====
+===== Test RBT avec structures (mot, definition) =====
 >Insertion (chien)
 Post-order après insertion :
 {chien   : animal domestique } (COLOR: BLACK)
@@ -147,21 +193,21 @@ N, AVL_Insert (ms), RBT_Insert (ms), AVL_Search (ms), RBT_Search (ms), AVL_Delet
 Benchmark complete. Results saved to benchmark_results.csv
 ```
 
-
 ## 4. Performance Results
 
 The `benchmark_results.csv` file can be plotted to visually compare the performance. The following graph shows the total time (in milliseconds) required to perform N operations for each tree.
+
 <center>
 <img src="figures/performance_graph.png " width=80%>
 </center>
 
 **Analysis**
 
-* Complexity: All operations correctly display O(N log N) total time complexity (seen as the gently curving lines) and are not O(1) (flat) or O(N^2) (steep curve).
+- Complexity: All operations correctly display O(N log N) total time complexity (seen as the gently curving lines) and are not O(1) (flat) or O(N^2) (steep curve).
 
-* Insertion/Deletion: The Red-Black Tree consistently outperforms the AVL Tree in insertion- and deletion-heavy workloads. This is because its rebalancing rules are less strict, requiring fewer and simpler rotations on average.
+- Insertion/Deletion: The Red-Black Tree consistently outperforms the AVL Tree in insertion- and deletion-heavy workloads. This is because its rebalancing rules are less strict, requiring fewer and simpler rotations on average.
 
-* Search: The AVL Tree shows a slight performance advantage in the search-only benchmark. Its stricter balancing rules guarantee a shorter maximum tree height, resulting in fewer comparisons in the worst case.
+- Search: The AVL Tree shows a slight performance advantage in the search-only benchmark. Its stricter balancing rules guarantee a shorter maximum tree height, resulting in fewer comparisons in the worst case.
 
 ## 5. Final Report
 
