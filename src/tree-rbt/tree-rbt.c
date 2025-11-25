@@ -1,11 +1,11 @@
-
-
 #include <string.h>
 #include "tree-rbt.h"
 #include <stdbool.h>
-#include "min-max.h"
 
-/*--------------------------------------------------------------------*/
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
 Tree tree_new()
 {
   return NULL;
@@ -25,46 +25,31 @@ void tree_delete(Tree tree, void (*delete)(void *))
 
 Tree tree_create(const void *data, size_t size)
 {
-  Tree tree = malloc(sizeof(*tree) - sizeof(tree->data) + size); // Allocate more data for the parent and the balance
+  Tree tree = malloc(sizeof(*tree) - sizeof(tree->data) + size);
   if (tree)
   {
-
     tree->left = NULL;
     tree->right = NULL;
-
-    // NEW: Parent node and balance
     tree->parent = NULL;
     tree->color = RED;
-
     memcpy(tree->data, data, size);
   }
-
   return tree;
 }
 
 Tree tree_get_left(Tree tree)
 {
-  if (tree)
-    return tree->left;
-  else
-    return NULL;
+  return tree ? tree->left : NULL;
 }
 
 Tree tree_get_right(Tree tree)
 {
-  if (tree)
-    return tree->right;
-  else
-    return NULL;
+  return tree ? tree->right : NULL;
 }
 
-void *
-tree_get_data(Tree tree)
+void *tree_get_data(Tree tree)
 {
-  if (tree)
-    return tree->data;
-  else
-    return NULL;
+  return tree ? tree->data : NULL;
 }
 
 bool tree_set_left(Tree tree, Tree left)
@@ -72,15 +57,11 @@ bool tree_set_left(Tree tree, Tree left)
   if (tree)
   {
     tree->left = left;
-
-    // NEW: set the parent pointer for the child
     if (left)
       left->parent = tree;
-
     return true;
   }
-  else
-    return false;
+  return false;
 }
 
 bool tree_set_right(Tree tree, Tree right)
@@ -88,15 +69,11 @@ bool tree_set_right(Tree tree, Tree right)
   if (tree)
   {
     tree->right = right;
-
-    // NEW: set the parent pointer for the child
     if (right)
       right->parent = tree;
-
     return true;
   }
-  else
-    return false;
+  return false;
 }
 
 bool tree_set_data(Tree tree, const void *data, size_t size)
@@ -106,13 +83,10 @@ bool tree_set_data(Tree tree, const void *data, size_t size)
     memcpy(tree->data, data, size);
     return true;
   }
-  else
-    return false;
+  return false;
 }
 
-void tree_pre_order(Tree tree,
-                    void (*func)(void *, void *),
-                    void *extra_data)
+void tree_pre_order(Tree tree, void (*func)(void *, void *), void *extra_data)
 {
   if (tree)
   {
@@ -122,9 +96,7 @@ void tree_pre_order(Tree tree,
   }
 }
 
-void tree_in_order(Tree tree,
-                   void (*func)(void *, void *),
-                   void *extra_data)
+void tree_in_order(Tree tree, void (*func)(void *, void *), void *extra_data)
 {
   if (tree)
   {
@@ -134,9 +106,7 @@ void tree_in_order(Tree tree,
   }
 }
 
-void tree_post_order(Tree tree,
-                     void (*func)(void *, void *),
-                     void *extra_data)
+void tree_post_order(Tree tree, void (*func)(void *, void *), void *extra_data)
 {
   if (tree)
   {
@@ -146,18 +116,15 @@ void tree_post_order(Tree tree,
   }
 }
 
-size_t
-tree_height(Tree tree)
+size_t tree_height(Tree tree)
 {
   if (tree)
-    return 1 + MAX(tree_height(tree->left),
-                   tree_height(tree->right));
+    return 1 + MAX(tree_height(tree->left), tree_height(tree->right));
   else
     return 0;
 }
 
-size_t
-tree_size(Tree tree)
+size_t tree_size(Tree tree)
 {
   if (tree)
     return 1 + tree_size(tree->left) + tree_size(tree->right);
@@ -165,11 +132,8 @@ tree_size(Tree tree)
     return 0;
 }
 
-void *
-tree_search(Tree tree,
-            const void *data,
-            int (*compare)(const void *, const void
-                                             *))
+void *tree_search(Tree tree, const void *data,
+                  int (*compare)(const void *, const void *))
 {
   if (tree)
   {
@@ -182,36 +146,30 @@ tree_search(Tree tree,
     case 1:
       return tree_search(tree->right, data, compare);
     default:
-      return NULL; // RAJOUTE CAR WARNING !!!
+      return NULL;
     }
   }
-  else
-    return NULL;
+  return NULL;
 }
 
-static Tree tree_search_node(Tree tree,
-                             const void *data,
+static Tree tree_search_node(Tree tree, const void *data,
                              int (*compare)(const void *, const void *))
 {
   if (!tree)
     return NULL;
-
   int cmp = compare(data, tree->data);
-
   if (cmp < 0)
     return tree_search_node(tree->left, data, compare);
   else if (cmp > 0)
     return tree_search_node(tree->right, data, compare);
   else
-    return tree; // CORRECT: Return the entire node pointer
+    return tree;
 }
 
-static void
-set(void *data, void *array)
+static void set(void *data, void *array)
 {
   static size_t size;
   static size_t offset;
-
   if (data)
   {
     memcpy(array + offset, data, size);
@@ -224,20 +182,16 @@ set(void *data, void *array)
   }
 }
 
-int tree_sort(void *array,
-              size_t length,
-              size_t size,
+int tree_sort(void *array, size_t length, size_t size,
               int (*compare)(const void *, const void *))
 {
   size_t i;
   Tree tree = tree_new();
-  void *pointer;
+  void *pointer = array;
 
-  pointer = array;
   for (i = 0; i < length; i++)
   {
-    if (tree_insert_sorted(&tree, pointer, size,
-                           compare))
+    if (tree_insert_sorted(&tree, pointer, size, compare))
       pointer += size;
     else
     {
@@ -245,30 +199,27 @@ int tree_sort(void *array,
       return false;
     }
   }
+
   set(NULL, &size);
   tree_in_order(tree, set, array);
   tree_delete(tree, NULL);
   return true;
 }
 
-// ========================== ALL OF MY WORK ARE BELOW ========================================
-/* rotate left:
-    A                    B
-   / \                 /   \
-  a   B     ->        A     c
-     / \             / \
-    b   c           a   b
+// ========================== RED-BLACK TREE OPERATIONS ========================================
 
-*/
 static void rotate_left(Tree *root, Tree x)
 {
   Tree y = x->right;
   x->right = y->left;
+
   if (y->left != NULL)
   {
     y->left->parent = x;
   }
+
   y->parent = x->parent;
+
   if (x->parent == NULL)
   {
     *root = y;
@@ -281,26 +232,23 @@ static void rotate_left(Tree *root, Tree x)
   {
     x->parent->right = y;
   }
+
   y->left = x;
   x->parent = y;
 }
 
-/* rotate right:
-        B                A
-       / \             /   \
-      A   c   ->      a     B
-     / \                   / \
-    a   b                 b   c
-*/
 static void rotate_right(Tree *root, Tree x)
 {
   Tree y = x->left;
   x->left = y->right;
+
   if (y->right != NULL)
   {
     y->right->parent = x;
   }
+
   y->parent = x->parent;
+
   if (x->parent == NULL)
   {
     *root = y;
@@ -313,22 +261,88 @@ static void rotate_right(Tree *root, Tree x)
   {
     x->parent->left = y;
   }
+
   y->right = x;
   x->parent = y;
 }
 
-static void tree_insert_fixup(Tree *root, Tree z);
+static void tree_insert_fixup(Tree *root, Tree z)
+{
+  while (z != *root && z->parent && z->parent->color == RED)
+  {
+    // Parent must have a parent (grandparent) since parent is RED and root is BLACK
+    if (!z->parent->parent)
+      break;
 
-bool tree_insert_sorted(Tree *ptree,
-                        const void *data,
-                        size_t size,
+    if (z->parent == z->parent->parent->left)
+    {
+      Tree y = z->parent->parent->right; // Uncle
+
+      if (y && y->color == RED)
+      {
+        // Case 1: Uncle is RED
+        z->parent->color = BLACK;
+        y->color = BLACK;
+        z->parent->parent->color = RED;
+        z = z->parent->parent;
+      }
+      else
+      {
+        // Case 2 & 3: Uncle is BLACK
+        if (z == z->parent->right)
+        {
+          // Case 2: Left-Right case
+          z = z->parent;
+          rotate_left(root, z);
+        }
+        // Case 3: Left-Left case
+        z->parent->color = BLACK;
+        z->parent->parent->color = RED;
+        rotate_right(root, z->parent->parent);
+      }
+    }
+    else
+    {
+      // Symmetric case
+      Tree y = z->parent->parent->left; // Uncle
+
+      if (y && y->color == RED)
+      {
+        // Case 1: Uncle is RED
+        z->parent->color = BLACK;
+        y->color = BLACK;
+        z->parent->parent->color = RED;
+        z = z->parent->parent;
+      }
+      else
+      {
+        // Case 2 & 3: Uncle is BLACK
+        if (z == z->parent->left)
+        {
+          // Case 2: Right-Left case
+          z = z->parent;
+          rotate_right(root, z);
+        }
+        // Case 3: Right-Right case
+        z->parent->color = BLACK;
+        z->parent->parent->color = RED;
+        rotate_left(root, z->parent->parent);
+      }
+    }
+  }
+
+  (*root)->color = BLACK;
+}
+
+bool tree_insert_sorted(Tree *ptree, const void *data, size_t size,
                         int (*compare)(const void *, const void *))
 {
-  // Step 1: Standard BST insert
+  // Create new node
   Tree z = tree_create(data, size);
   if (!z)
     return false;
 
+  // Standard BST insert
   Tree y = NULL;
   Tree x = *ptree;
 
@@ -346,6 +360,7 @@ bool tree_insert_sorted(Tree *ptree,
   }
 
   z->parent = y;
+
   if (y == NULL)
   {
     *ptree = z; // Tree was empty
@@ -359,139 +374,10 @@ bool tree_insert_sorted(Tree *ptree,
     y->right = z;
   }
 
-  // Step 2: Call the fix-up function to restore properties
+  // Fix Red-Black properties
   tree_insert_fixup(ptree, z);
 
   return true;
-}
-/*
-static void tree_insert_fixup(Tree *root, Tree z)
-{
-  // Loop as long as the parent of z is RED
-  while (z->parent && z->parent->color == RED)
-  {
-    // Case 1: Parent is a LEFT child
-    if (z->parent == z->parent->parent->left)
-    {
-      Tree y = z->parent->parent->right; // The "uncle"
-      if (y && y->color == RED)
-      {
-        // Case 1a: Uncle is RED -> Recolor and move up
-        z->parent->color = BLACK;
-        y->color = BLACK;
-        z->parent->parent->color = RED;
-        z = z->parent->parent;
-      }
-      else
-      {
-        // Case 1b: Uncle is BLACK (or NULL)
-        if (z == z->parent->right)
-        {
-          // Case 1b-i: z is a right child -> Left rotate on parent
-          z = z->parent;
-          rotate_left(root, z);
-        }
-        // Case 1b-ii: z is a left child -> Recolor and right rotate on grandparent
-        z->parent->color = BLACK;
-        z->parent->parent->color = RED;
-        rotate_right(root, z);
-      }
-    }
-    else
-    {
-      // Case 2: Parent is a RIGHT child (symmetric to Case 1)
-      Tree y = z->parent->parent->left; // The "uncle"
-      if (y && y->color == RED)
-      {
-        // Case 2a: Uncle is RED -> Recolor and move up
-        z->parent->color = BLACK;
-        y->color = BLACK;
-        z->parent->parent->color = RED;
-        z = z->parent->parent;
-      }
-      else
-      {
-        // Case 2b: Uncle is BLACK (or NULL)
-        if (z == z->parent->left)
-        {
-          // Case 2b-i: z is a left child -> Right rotate on parent
-          z = z->parent;
-          rotate_right(root, z);
-        }
-        // Case 2b-ii: z is a right child -> Recolor and left rotate on grandparent
-        z->parent->color = BLACK;
-        z->parent->parent->color = RED;
-        rotate_left(root, z);
-      }
-    }
-  }
-  // Final Step: Ensure the root of the entire tree is BLACK
-  (*root)->color = BLACK;
-}
-*/
-
-static void tree_insert_fixup(Tree *root, Tree z)
-{
-  while (z != *root && z->parent->color == RED)
-  {
-    // The grandparent must exist because the parent is RED, and the root is always BLACK.
-    if (z->parent == z->parent->parent->left)
-    {
-      Tree y = z->parent->parent->right; // The Uncle
-      if (y && y->color == RED)
-      {
-        // Case 1: Uncle is RED -> Recolor and move up
-        z->parent->color = BLACK;
-        y->color = BLACK;
-        z->parent->parent->color = RED;
-        z = z->parent->parent;
-      }
-      else
-      {
-        // Case 2: Uncle is BLACK -> Rotations needed
-        if (z == z->parent->right)
-        {
-          // This handles the Left-Right case by transforming it
-          // into a Left-Left case for the next iteration.
-          z = z->parent;
-          rotate_left(root, z);
-        }
-        // This now handles the clean Left-Left case.
-        z->parent->color = BLACK;
-        z->parent->parent->color = RED;
-        rotate_right(root, z->parent->parent);
-      }
-    }
-    else
-    {
-      // Symmetric case for when the parent is a right child
-      Tree y = z->parent->parent->left; // The Uncle
-      if (y && y->color == RED)
-      {
-        // Case 1
-        z->parent->color = BLACK;
-        y->color = BLACK;
-        z->parent->parent->color = RED;
-        z = z->parent->parent;
-      }
-      else
-      {
-        // Case 2
-        if (z == z->parent->left)
-        {
-          // Right-Left case -> transform to Right-Right
-          z = z->parent;
-          rotate_right(root, z);
-        }
-        // Right-Right case
-        z->parent->color = BLACK;
-        z->parent->parent->color = RED;
-        rotate_left(root, z->parent->parent);
-      }
-    }
-  }
-  // Ensure the root of the entire tree is always BLACK.
-  (*root)->color = BLACK;
 }
 
 static void transplant(Tree *root, Tree u, Tree v)
@@ -508,12 +394,12 @@ static void transplant(Tree *root, Tree u, Tree v)
   {
     u->parent->right = v;
   }
+
   if (v != NULL)
   {
     v->parent = u->parent;
   }
 }
-
 
 static Tree min_value_node(Tree node)
 {
@@ -525,38 +411,59 @@ static Tree min_value_node(Tree node)
 
 static void delete_fixup(Tree *root, Tree x, Tree x_parent)
 {
-  Tree w; // Sibling
-
   while (x != *root && (x == NULL || x->color == BLACK))
   {
-    if (x_parent->left == x)
-    { // Is x a left child?
+    // We need x_parent to find the sibling when x is NULL
+    if (x_parent == NULL)
+      break;
+
+    Tree w; // Sibling
+
+    if (x == x_parent->left)
+    {
       w = x_parent->right;
+
+      // CRITICAL FIX: Check if sibling exists
+      if (w == NULL)
+        break;
+
       if (w->color == RED)
-      { // Case 1
+      {
+        // Case 1: Sibling is RED
         w->color = BLACK;
         x_parent->color = RED;
         rotate_left(root, x_parent);
         w = x_parent->right;
+
+        // Check again after rotation
+        if (w == NULL)
+          break;
       }
+
       if ((w->left == NULL || w->left->color == BLACK) &&
           (w->right == NULL || w->right->color == BLACK))
-      { // Case 2
+      {
+        // Case 2: Sibling's children are both BLACK
         w->color = RED;
         x = x_parent;
-        x_parent = x->parent; // <<< --- FIX: UPDATE THE PARENT POINTER
+        x_parent = x->parent;
       }
       else
       {
         if (w->right == NULL || w->right->color == BLACK)
-        { // Case 3
+        {
+          // Case 3: Sibling's right child is BLACK
           if (w->left)
             w->left->color = BLACK;
           w->color = RED;
           rotate_right(root, w);
           w = x_parent->right;
+
+          if (w == NULL)
+            break;
         }
-        // Case 4
+
+        // Case 4: Sibling's right child is RED
         w->color = x_parent->color;
         x_parent->color = BLACK;
         if (w->right)
@@ -566,32 +473,49 @@ static void delete_fixup(Tree *root, Tree x, Tree x_parent)
       }
     }
     else
-    { // x is a right child
+    {
+      // Symmetric case (x is right child)
       w = x_parent->left;
+
+      // CRITICAL FIX: Check if sibling exists
+      if (w == NULL)
+        break;
+
       if (w->color == RED)
-      { // Case 1
+      {
+        // Case 1
         w->color = BLACK;
         x_parent->color = RED;
         rotate_right(root, x_parent);
         w = x_parent->left;
+
+        if (w == NULL)
+          break;
       }
+
       if ((w->left == NULL || w->left->color == BLACK) &&
           (w->right == NULL || w->right->color == BLACK))
-      { // Case 2
+      {
+        // Case 2
         w->color = RED;
         x = x_parent;
-        x_parent = x->parent; // <<< --- FIX: UPDATE THE PARENT POINTER
+        x_parent = x->parent;
       }
       else
       {
         if (w->left == NULL || w->left->color == BLACK)
-        { // Case 3
+        {
+          // Case 3
           if (w->right)
             w->right->color = BLACK;
           w->color = RED;
           rotate_left(root, w);
           w = x_parent->left;
+
+          if (w == NULL)
+            break;
         }
+
         // Case 4
         w->color = x_parent->color;
         x_parent->color = BLACK;
@@ -602,13 +526,12 @@ static void delete_fixup(Tree *root, Tree x, Tree x_parent)
       }
     }
   }
+
   if (x)
     x->color = BLACK;
 }
 
-// In tree_remove_sorted, you MUST find the parent of x before the fixup call
-bool tree_remove_sorted(Tree *ptree,
-                        const void *data,
+bool tree_remove_sorted(Tree *ptree, const void *data,
                         int (*compare)(const void *, const void *))
 {
   Tree z = tree_search_node(*ptree, data, compare);
@@ -617,7 +540,7 @@ bool tree_remove_sorted(Tree *ptree,
 
   Tree y = z;
   Tree x;
-  Tree x_parent; // We need to track the parent of x
+  Tree x_parent;
   Color y_original_color = y->color;
 
   if (z->left == NULL)
@@ -649,6 +572,7 @@ bool tree_remove_sorted(Tree *ptree,
       y->right = z->right;
       y->right->parent = y;
     }
+
     transplant(ptree, z, y);
     y->left = z->left;
     y->left->parent = y;

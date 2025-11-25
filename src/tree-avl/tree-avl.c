@@ -1,475 +1,440 @@
-
-
 #include <string.h>
 #include "tree-avl.h"
 #include <stdbool.h>
-#include "min-max.h"
 
-/*--------------------------------------------------------------------*/
-Tree
-tree_new ()
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
+Tree tree_new()
 {
   return NULL;
 }
 
-void
-tree_delete (Tree tree, void (*delete) (void *))
+void tree_delete(Tree tree, void (*delete)(void *))
 {
   if (tree)
-    {
-      tree_delete (tree->left, delete);
-      tree_delete (tree->right, delete);
-      if (delete)
-        delete (tree->data);
-      free (tree);
-    }
+  {
+    tree_delete(tree->left, delete);
+    tree_delete(tree->right, delete);
+    if (delete)
+      delete(tree->data);
+    free(tree);
+  }
 }
 
-Tree
-tree_create (const void *data, size_t size)
+Tree tree_create(const void *data, size_t size)
 {
-  Tree tree = malloc(sizeof(*tree) - sizeof(tree->data) + size); //Allocate more data for the parent and the balance
+  Tree tree = malloc(sizeof(*tree) - sizeof(tree->data) + size);
   if (tree)
-    {
-
-      tree->left = NULL;
-      tree->right = NULL;
-
-      //NEW: Parent node and balance
-      tree->parent = NULL;
-      tree->balance = 0;
-      
-      memcpy (tree->data, data, size);
-    }
-
+  {
+    tree->left = NULL;
+    tree->right = NULL;
+    tree->parent = NULL;
+    tree->height = 1; // New node has height 1
+    memcpy(tree->data, data, size);
+  }
   return tree;
 }
 
-Tree
-tree_get_left (Tree tree)
+Tree tree_get_left(Tree tree)
 {
-  if (tree)
-    return tree->left;
-  else
-    return NULL;
+  return tree ? tree->left : NULL;
 }
 
-Tree
-tree_get_right (Tree tree)
+Tree tree_get_right(Tree tree)
 {
-  if (tree)
-    return tree->right;
-  else
-    return NULL;
+  return tree ? tree->right : NULL;
 }
 
-void *
-tree_get_data (Tree tree)
+void *tree_get_data(Tree tree)
 {
-  if (tree)
-    return tree->data;
-  else
-    return NULL;
+  return tree ? tree->data : NULL;
 }
 
-bool
-tree_set_left (Tree tree, Tree left)
+bool tree_set_left(Tree tree, Tree left)
 {
   if (tree)
-    {
-      tree->left = left;
-
-      //NEW: set the parent pointer for the child
-      if (left) left->parent=tree;
-
-      return true;
-    }
-  else
-    return false;
+  {
+    tree->left = left;
+    if (left)
+      left->parent = tree;
+    return true;
+  }
+  return false;
 }
 
-bool
-tree_set_right (Tree tree, Tree right)
+bool tree_set_right(Tree tree, Tree right)
 {
   if (tree)
-    {
-      tree->right = right;
-
-      //NEW: set the parent pointer for the child
-      if (right) right->parent=tree;
-
-      return true;
-    }
-  else
-    return false;
+  {
+    tree->right = right;
+    if (right)
+      right->parent = tree;
+    return true;
+  }
+  return false;
 }
 
-bool
-tree_set_data (Tree tree, const void *data, size_t
-size)
+bool tree_set_data(Tree tree, const void *data, size_t size)
 {
   if (tree)
-    {
-      memcpy (tree->data, data, size);
-      return true;
-    }
-  else
-    return false;
+  {
+    memcpy(tree->data, data, size);
+    return true;
+  }
+  return false;
 }
 
-void
-tree_pre_order (Tree tree,
-                void (*func) (void *, void *),
-                void *extra_data)
+void tree_pre_order(Tree tree, void (*func)(void *, void *), void *extra_data)
 {
   if (tree)
-    {
-      func (tree->data, extra_data);
-      tree_pre_order (tree->left, func, extra_data);
-      tree_pre_order (tree->right, func, extra_data);
-    }
+  {
+    func(tree->data, extra_data);
+    tree_pre_order(tree->left, func, extra_data);
+    tree_pre_order(tree->right, func, extra_data);
+  }
 }
 
-void
-tree_in_order (Tree tree,
-               void (*func) (void *, void *),
-               void *extra_data)
+void tree_in_order(Tree tree, void (*func)(void *, void *), void *extra_data)
 {
   if (tree)
-    {
-      tree_in_order (tree->left, func, extra_data);
-      func (tree->data, extra_data);
-      tree_in_order (tree->right, func, extra_data);
-    }
+  {
+    tree_in_order(tree->left, func, extra_data);
+    func(tree->data, extra_data);
+    tree_in_order(tree->right, func, extra_data);
+  }
 }
 
-void
-tree_post_order (Tree tree,
-                 void (*func) (void *, void *),
-                 void *extra_data)
+void tree_post_order(Tree tree, void (*func)(void *, void *), void *extra_data)
 {
   if (tree)
-    {
-      tree_post_order (tree->left, func, extra_data);
-      tree_post_order (tree->right, func, extra_data);
-      func (tree->data, extra_data);
-    }
+  {
+    tree_post_order(tree->left, func, extra_data);
+    tree_post_order(tree->right, func, extra_data);
+    func(tree->data, extra_data);
+  }
 }
 
-size_t
-tree_height (Tree tree)
+size_t tree_height(Tree tree)
+{
+  return tree ? tree->height : 0;
+}
+
+size_t tree_size(Tree tree)
 {
   if (tree)
-    return 1 + MAX (tree_height (tree->left),
-tree_height (tree->right));
+    return 1 + tree_size(tree->left) + tree_size(tree->right);
   else
     return 0;
 }
 
-size_t
-tree_size (Tree tree)
+void *tree_search(Tree tree, const void *data,
+                  int (*compare)(const void *, const void *))
 {
   if (tree)
-    return 1 + tree_size (tree->left) + tree_size
-(tree->right);
-  else
-    return 0;
-}
-
-void *
-tree_search (Tree tree,
-             const void *data,
-             int (*compare) (const void *, const void
-*))
-{
-  if (tree)
+  {
+    switch (compare(data, tree->data))
     {
-      switch (compare (data, tree->data))
-        {
-        case -1:
-          return tree_search (tree->left, data, compare);
-        case 0:
-          return tree->data;
-        case 1:
-          return tree_search (tree->right, data, compare);
-        default:
-            return NULL; // RAJOUTE CAR WARNING !!!
-        }
+    case -1:
+      return tree_search(tree->left, data, compare);
+    case 0:
+      return tree->data;
+    case 1:
+      return tree_search(tree->right, data, compare);
+    default:
+      return NULL;
     }
-  else
-    return NULL;
+  }
+  return NULL;
 }
 
-static void
-set (void *data,void *array)
+void set(void *data, void *array)
 {
-  static size_t size;
-  static size_t offset;
-
+  size_t size;
+  size_t offset;
   if (data)
-    {
-      memcpy (array + offset, data, size);
-      offset += size;
-    }
+  {
+    memcpy(array + offset, data, size);
+    offset += size;
+  }
   else
-    {
-      offset = 0;
-      size = *(size_t *) array;
-    }
+  {
+    offset = 0;
+    size = *(size_t *)array;
+  }
 }
 
-int
-tree_sort (void *array,
-           size_t length,
-           size_t size,
-           int (*compare) (const void *, const void *))
+int tree_sort(void *array, size_t length, size_t size,
+              int (*compare)(const void *, const void *))
 {
   size_t i;
-  Tree tree = tree_new ();
+  Tree tree = tree_new();
   void *pointer;
-
   pointer = array;
   for (i = 0; i < length; i++)
+  {
+    if (tree_insert_sorted(&tree, pointer, size, compare))
+      pointer += size;
+    else
     {
-      if (tree_insert_sorted (&tree, pointer, size,
-compare))
-        pointer += size;
-      else
-        {
-          tree_delete (tree, NULL);
-          return false;
-        }
+      tree_delete(tree, NULL);
+      return false;
     }
-  set (NULL, &size);
-  tree_in_order (tree, set, array);
-  tree_delete (tree, NULL);
+  }
+  set(NULL, &size);
+  tree_in_order(tree, set, array);
+  tree_delete(tree, NULL);
   return true;
 }
 
+// ========================== AVL OPERATIONS ========================================
 
-
-// ========================== ALL OF MY WORK ARE BELOW ========================================
-//NEW: Recomputing balance for a node = height left - height right
-static void recompute_balance(Tree tree)
+// O(1) - Get height from stored value
+int get_height(Tree node)
 {
-  if (!tree) return;
-  int hl = (int)tree_height(tree->left);
-  int hr = (int)tree_height(tree->right);
-  tree->balance = hl-hr;
+  return node ? node->height : 0;
 }
 
-/* rotate left:
-    A                    B
-   / \                 /   \
-  a   B     ->        A     c
-     / \             / \
-    b   c           a   b
-    
-*/
-static Tree rotate_left(Tree A) {
+// O(1) - Calculate balance factor
+int get_balance(Tree node)
+{
+  return node ? get_height(node->left) - get_height(node->right) : 0;
+}
+
+// O(1) - Update height based on children
+void update_height(Tree node)
+{
+  if (node)
+  {
+    node->height = 1 + MAX(get_height(node->left), get_height(node->right));
+  }
+}
+
+// Rotate left - O(1)
+Tree rotate_left(Tree A)
+{
   Tree B = A->right;
   Tree b = B->left;
 
   // Perform rotation
-  tree_set_left(B, A);
-  tree_set_right(A, b);
+  B->left = A;
+  A->right = b;
 
   // Update parents
   B->parent = A->parent;
+  A->parent = B;
+  if (b)
+    b->parent = A;
 
-  // Recalculate balance factors for the affected nodes
-  recompute_balance(A);
-  recompute_balance(B);
+  // Update heights (order matters!)
+  update_height(A);
+  update_height(B);
 
-  return B; // Return new root of this subtree
+  return B;
 }
 
-/* rotate right:
-        B                A
-       / \             /   \
-      A   c   ->      a     B
-     / \                   / \
-    a   b                 b   c
-*/
-static Tree rotate_right(Tree B) {
+// Rotate right - O(1)
+Tree rotate_right(Tree B)
+{
   Tree A = B->left;
   Tree b = A->right;
 
   // Perform rotation
-  tree_set_right(A, B);
-  tree_set_left(B, b);
-  
+  A->right = B;
+  B->left = b;
+
   // Update parents
   A->parent = B->parent;
+  B->parent = A;
+  if (b)
+    b->parent = B;
 
-  // Recalculate balance factors for the affected nodes
-  recompute_balance(B);
-  recompute_balance(A);
+  // Update heights (order matters!)
+  update_height(B);
+  update_height(A);
 
-  return A; // Return new root of this subtree
+  return A;
 }
 
-bool
-tree_insert_sorted (Tree * ptree,
-                    const void *data,
-                    size_t size,
-                    int (*compare) (const void *, const void *))
+// Insert with AVL balancing - O(log n)
+bool tree_insert_sorted(Tree *ptree, const void *data, size_t size,
+                        int (*compare)(const void *, const void *))
 {
- if (!*ptree) {
-        // Base case: insert new node here
-        Tree new_node = tree_create(data, size);
-        if (!new_node) {
-            return false;
-        }
-        *ptree = new_node;
-        return true;
+  if (!*ptree)
+  {
+    Tree new_node = tree_create(data, size);
+    if (!new_node)
+    {
+      return false;
     }
-
-    Tree root = *ptree;
-    int cmp = compare(data, root->data);
-
-    if (cmp < 0) {
-        // Go Left
-        if (!tree_insert_sorted(&root->left, data, size, compare)) {
-            return false;
-        }
-        if (root->left) root->left->parent = root;
-    } else {
-        // Go Right (handles equal values too)
-        if (!tree_insert_sorted(&root->right, data, size, compare)) {
-            return false;
-        }
-        if (root->right) root->right->parent = root;
-    }
-
-    // After insertion, update balance and rebalance if needed
-    recompute_balance(root);
-    
-    // Left Heavy
-    if (root->balance > 1) {
-        // Left-Right case
-        if (root->left && root->left->balance < 0) {
-            root->left = rotate_left(root->left);
-        }
-        // Left-Left case (or after fixing LR)
-        *ptree = rotate_right(root);
-    }
-    // Right Heavy
-    else if (root->balance < -1) {
-        // Right-Left case
-        if (root->right && root->right->balance > 0) {
-            root->right = rotate_right(root->right);
-        }
-        // Right-Right case (or after fixing RL)
-        *ptree = rotate_left(root);
-    } else {
-        // No rotation needed, just update the pointer
-        *ptree = root;
-    }
-
+    *ptree = new_node;
     return true;
+  }
+
+  Tree root = *ptree;
+  int cmp = compare(data, root->data);
+
+  if (cmp < 0)
+  {
+    if (!tree_insert_sorted(&root->left, data, size, compare))
+    {
+      return false;
+    }
+    if (root->left)
+      root->left->parent = root;
+  }
+  else
+  {
+    if (!tree_insert_sorted(&root->right, data, size, compare))
+    {
+      return false;
+    }
+    if (root->right)
+      root->right->parent = root;
+  }
+
+  // Update height - O(1)
+  update_height(root);
+
+  // Get balance factor - O(1)
+  int balance = get_balance(root);
+
+  // Left Heavy
+  if (balance > 1)
+  {
+    // Left-Right case
+    if (get_balance(root->left) < 0)
+    {
+      root->left = rotate_left(root->left);
+    }
+    // Left-Left case
+    *ptree = rotate_right(root);
+  }
+  // Right Heavy
+  else if (balance < -1)
+  {
+    // Right-Left case
+    if (get_balance(root->right) > 0)
+    {
+      root->right = rotate_right(root->right);
+    }
+    // Right-Right case
+    *ptree = rotate_left(root);
+  }
+  else
+  {
+    *ptree = root;
+  }
+
+  return true;
 }
 
-// helper: find minimum node in subtree
-static Tree min_value_node(Tree node) {
-    Tree current = node;
-    while (current && current->left)
-        current = current->left;
-    return current;
-}
-bool tree_remove_sorted(Tree *ptree,
-                        const void *data,
-                        int (*compare)(const void *, const void *)) 
+// Delete with AVL balancing - O(log n)
+bool tree_remove_sorted(Tree *ptree, const void *data,
+                        int (*compare)(const void *, const void *))
 {
-    // Base case: data not found in this branch
-    if (!ptree || !*ptree) {
-        return false;
+  if (!ptree || !*ptree)
+  {
+    return false;
+  }
+
+  Tree root = *ptree;
+  int cmp = compare(data, root->data);
+
+  if (cmp < 0)
+  {
+    if (!tree_remove_sorted(&root->left, data, compare))
+    {
+      return false;
     }
-
-    Tree root = *ptree;
-    int cmp = compare(data, root->data);
-
-    if (cmp < 0) {
-        // Recurse left
-        if (!tree_remove_sorted(&root->left, data, compare)) {
-            return false; // Node not found
-        }
-    } else if (cmp > 0) {
-        // Recurse right
-        if (!tree_remove_sorted(&root->right, data, compare)) {
-            return false; // Node not found
-        }
-    } else {
-        // Node found, start deletion logic
-        Tree node_to_delete = root;
-
-        if (!root->left || !root->right) {
-            // Case 1 & 2: Node has 0 or 1 child
-            Tree child = root->left ? root->left : root->right;
-            
-            if (child) {
-                child->parent = root->parent;
-            }
-            
-            *ptree = child; // Parent's pointer now points to the child (or NULL)
-            free(node_to_delete);
-            // The function will continue to the rebalancing part below
-            
-        } else {
-            // Case 3: Node has 2 children
-            // Find inorder successor (smallest node in the right subtree)
-            Tree succ = root->right;
-            while (succ->left) {
-                succ = succ->left;
-            }
-
-            *(int*)root->data = *(int*)succ->data;
-
-            // Recursively delete the successor node from the right subtree
-            tree_remove_sorted(&root->right, succ->data, compare);
-        }
+  }
+  else if (cmp > 0)
+  {
+    if (!tree_remove_sorted(&root->right, data, compare))
+    {
+      return false;
     }
+  }
+  else
+  {
+    // Node found, delete it
+    if (!root->left || !root->right)
+    {
+      // 0 or 1 child
+      Tree child = root->left ? root->left : root->right;
 
-    // If the tree became empty after deletion ==> removing the last node
-    if (*ptree == NULL) {
-        return true;
+      if (child)
+      {
+        child->parent = root->parent;
+      }
+
+      *ptree = child;
+      free(root);
+      return true;
     }
-    
-    root = *ptree; 
+    else
+    {
+      // 2 children: find inorder successor
+      Tree succ = root->right;
+      while (succ->left)
+      {
+        succ = succ->left;
+      }
 
-    // --- Update balance and rebalance the tree ---
-    int leftH = root->left ? tree_height(root->left) + 1 : 0;
-    int rightH = root->right ? tree_height(root->right) + 1 : 0;
-    root->balance = leftH - rightH;
-    
-    // Left Heavy
-    if (root->balance > 1) { 
-        // Left-Left Case
-        if (root->left && root->left->balance >= 0) {
-            *ptree = rotate_right(root);
-        } 
-        // Left-Right Case
-        else {
-            root->left = rotate_left(root->left);
-            *ptree = rotate_right(root);
-        }
-    } 
-    // Right Heavy
-    else if (root->balance < -1) {
-        // Right-Right Case
-        if (root->right && root->right->balance <= 0) {
-            *ptree = rotate_left(root);
-        }
-        // Right-Left Case
-        else {
-            root->right = rotate_right(root->right);
-            *ptree = rotate_left(root);
-        }
+      // Copy successor's data
+      memcpy(root->data, succ->data, sizeof(int)); // Adjust size if needed
+
+      // Delete successor
+      tree_remove_sorted(&root->right, succ->data, compare);
     }
-    
-    // Update parent pointers after potential rotations
-    if ((*ptree)->left) (*ptree)->left->parent = *ptree;
-    if ((*ptree)->right) (*ptree)->right->parent = *ptree;
+  }
 
+  if (*ptree == NULL)
+  {
     return true;
+  }
+
+  root = *ptree;
+
+  // Update height - O(1)
+  update_height(root);
+
+  // Get balance - O(1)
+  int balance = get_balance(root);
+
+  // Left Heavy
+  if (balance > 1)
+  {
+    if (get_balance(root->left) >= 0)
+    {
+      *ptree = rotate_right(root);
+    }
+    else
+    {
+      root->left = rotate_left(root->left);
+      *ptree = rotate_right(root);
+    }
+  }
+  // Right Heavy
+  else if (balance < -1)
+  {
+    if (get_balance(root->right) <= 0)
+    {
+      *ptree = rotate_left(root);
+    }
+    else
+    {
+      root->right = rotate_right(root->right);
+      *ptree = rotate_left(root);
+    }
+  }
+
+  // Update parent pointers
+  if ((*ptree)->left)
+    (*ptree)->left->parent = *ptree;
+  if ((*ptree)->right)
+    (*ptree)->right->parent = *ptree;
+
+  return true;
 }

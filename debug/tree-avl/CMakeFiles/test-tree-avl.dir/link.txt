@@ -1,1 +1,0 @@
-/usr/bin/cc -g -rdynamic "CMakeFiles/test-tree-avl.dir/test-tree-avl.c.o" -o test-tree-avl  -Wl,-rpath,/home/tmd/Desktop/AVLvsRedBlack/debug/tree-avl libtree-avl.so 

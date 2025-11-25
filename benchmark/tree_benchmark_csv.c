@@ -136,7 +136,6 @@
 #undef _TreeNode
 #undef Tree
 
-
 // --- CONFIGURATION ---
 #define N_START 50
 #define N_MAX 1000
@@ -147,14 +146,18 @@
 // --- HELPER FUNCTIONS ---
 
 // Integer comparison function
-int cmpInt(const void *a, const void *b) {
+int cmpInt(const void *a, const void *b)
+{
     return (*(const int *)a - *(const int *)b);
 }
 
 // Fisher-Yates shuffle
-void shuffle(int *array, size_t n) {
-    if (n > 1) {
-        for (size_t i = 0; i < n - 1; i++) {
+void shuffle(int *array, size_t n)
+{
+    if (n > 1)
+    {
+        for (size_t i = 0; i < n - 1; i++)
+        {
             size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
             int t = array[j];
             array[j] = array[i];
@@ -164,10 +167,12 @@ void shuffle(int *array, size_t n) {
 }
 
 // Helper to get high-resolution time in milliseconds
-double get_time_ms(const struct timespec *start, const struct timespec *end) {
+double get_time_ms(const struct timespec *start, const struct timespec *end)
+{
     time_t secs = end->tv_sec - start->tv_sec;
     long nsecs = end->tv_nsec - start->tv_nsec;
-    if (nsecs < 0) {
+    if (nsecs < 0)
+    {
         --secs;
         nsecs += 1000000000L;
     }
@@ -176,30 +181,35 @@ double get_time_ms(const struct timespec *start, const struct timespec *end) {
 
 // --- MAIN BENCHMARK PROGRAM ---
 
-int main() {
+int main()
+{
     FILE *csv_file = fopen(OUTPUT_FILE, "w");
-    if (csv_file == NULL) {
+    if (csv_file == NULL)
+    {
         perror("Error opening output file");
         return 1;
     }
-    
+
     struct timespec start_ts, end_ts;
     srand((unsigned int)time(NULL));
 
-    fprintf(csv_file, "N,AVL_Insert_Time,RBT_Insert_Time,AVL_Search_Time,RBT_Search_Time,AVL_Delete_Time,RBT_Delete_Time\n");
+    fprintf(csv_file, "N,AVL_Insert,RBT_Insert,AVL_Search,RBT_Search,AVL_Delete,RBT_Delete\n");
     printf("N, AVL_Insert (ms), RBT_Insert (ms), AVL_Search (ms), RBT_Search (ms), AVL_Delete (ms), RBT_Delete (ms)\n");
 
-    for (int N = N_START; N <= N_MAX; N += N_INCREMENT) {
-        
+    for (int N = N_START; N <= N_MAX; N += N_INCREMENT)
+    {
+
         double total_avl_insert = 0, total_rbt_insert = 0;
         double total_avl_search = 0, total_rbt_search = 0;
         double total_avl_delete = 0, total_rbt_delete = 0;
 
-        for (int t = 0; t < NUM_TRIALS; t++) {
-            
+        for (int t = 0; t < NUM_TRIALS; t++)
+        {
+
             int *data = malloc(N * sizeof(int));
             int *shuffled_data = malloc(N * sizeof(int));
-            for (int i = 0; i < N; i++) {
+            for (int i = 0; i < N; i++)
+            {
                 data[i] = rand();
                 shuffled_data[i] = data[i];
             }
@@ -208,21 +218,24 @@ int main() {
             // --- 1. AVL Test ---
             AvlTree avl_tree = avl_tree_new();
             clock_gettime(CLOCK_MONOTONIC, &start_ts);
-            for (int i = 0; i < N; i++) {
+            for (int i = 0; i < N; i++)
+            {
                 avl_tree_insert_sorted(&avl_tree, &data[i], sizeof(int), cmpInt);
             }
             clock_gettime(CLOCK_MONOTONIC, &end_ts);
             total_avl_insert += get_time_ms(&start_ts, &end_ts);
 
             clock_gettime(CLOCK_MONOTONIC, &start_ts);
-            for (int i = 0; i < N; i++) {
+            for (int i = 0; i < N; i++)
+            {
                 avl_tree_search(avl_tree, &data[i], cmpInt);
             }
             clock_gettime(CLOCK_MONOTONIC, &end_ts);
             total_avl_search += get_time_ms(&start_ts, &end_ts);
 
             clock_gettime(CLOCK_MONOTONIC, &start_ts);
-            for (int i = 0; i < N; i++) {
+            for (int i = 0; i < N; i++)
+            {
                 avl_tree_remove_sorted(&avl_tree, &shuffled_data[i], cmpInt);
             }
             clock_gettime(CLOCK_MONOTONIC, &end_ts);
@@ -232,21 +245,24 @@ int main() {
             // --- 2. RBT Test ---
             RbtTree rbt_tree = rbt_tree_new();
             clock_gettime(CLOCK_MONOTONIC, &start_ts);
-            for (int i = 0; i < N; i++) {
+            for (int i = 0; i < N; i++)
+            {
                 rbt_tree_insert_sorted(&rbt_tree, &data[i], sizeof(int), cmpInt);
             }
             clock_gettime(CLOCK_MONOTONIC, &end_ts);
             total_rbt_insert += get_time_ms(&start_ts, &end_ts);
 
             clock_gettime(CLOCK_MONOTONIC, &start_ts);
-            for (int i = 0; i < N; i++) {
+            for (int i = 0; i < N; i++)
+            {
                 rbt_tree_search(rbt_tree, &data[i], cmpInt);
             }
             clock_gettime(CLOCK_MONOTONIC, &end_ts);
             total_rbt_search += get_time_ms(&start_ts, &end_ts);
 
             clock_gettime(CLOCK_MONOTONIC, &start_ts);
-            for (int i = 0; i < N; i++) {
+            for (int i = 0; i < N; i++)
+            {
                 rbt_tree_remove_sorted(&rbt_tree, &shuffled_data[i], cmpInt);
             }
             clock_gettime(CLOCK_MONOTONIC, &end_ts);
@@ -269,7 +285,7 @@ int main() {
                 final_avl_insert, final_rbt_insert,
                 final_avl_search, final_rbt_search,
                 final_avl_delete, final_rbt_delete);
-        
+
         printf("%d, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f\n", N,
                final_avl_insert, final_rbt_insert,
                final_avl_search, final_rbt_search,
