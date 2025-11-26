@@ -137,9 +137,9 @@
 #undef Tree
 
 // --- CONFIGURATION ---
-#define N_START 50
+#define N_START 10
 #define N_MAX 1000
-#define N_INCREMENT 50
+#define N_INCREMENT 10
 #define NUM_TRIALS 50 // Average 50 runs
 #define OUTPUT_FILE "benchmark_results.csv"
 
