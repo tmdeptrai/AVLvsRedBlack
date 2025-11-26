@@ -166,9 +166,7 @@ The benchmark file is self-contained (it includes the .c files directly), so we 
 cd benchmark/
 
 # 2. Compile the benchmark file.
-# -O2 enables optimizations, which is crucial for a real benchmark.
-# -lm links the math library.
-gcc BENCHMARK_DUONG.c -o benchmark -O2 -lm
+gcc tree_benchmark_csv.c -o tree_benchmark_csv
 ```
 
 **Run**
@@ -176,7 +174,7 @@ gcc BENCHMARK_DUONG.c -o benchmark -O2 -lm
 After compiling, run the executable from within the benchmark directory:
 
 ```bash
-./benchmark
+./tree_benchmark_csv`
 ```
 
 **Expected Output**
@@ -185,10 +183,12 @@ The program will run the experiment, averaging multiple trials for N from 50 to 
 
 ```bash
 N, AVL_Insert (ms), RBT_Insert (ms), AVL_Search (ms), RBT_Search (ms), AVL_Delete (ms), RBT_Delete (ms)
-50,0.014085,0.009905,0.001265,0.001183,0.0132780,0.009962
-100,0.0194636,0.008637,0.000856,0.000856,0.018376,0.008546
+10, 0.0062, 0.0037, 0.0008, 0.0008, 0.0058, 0.0038
+20, 0.0170, 0.0092, 0.0016, 0.0015, 0.0155, 0.0113
 ...
-1000,0.1441810,0.121686,0.008377,0.008575,0.150877,0.110489
+980, 0.3141, 0.1414, 0.0105, 0.0125, 0.3070, 0.1540
+990, 0.3241, 0.1395, 0.0111, 0.0126, 0.3102, 0.1533
+1000, 0.3372, 0.1402, 0.0110, 0.0119, 0.3157, 0.1600
 
 Benchmark complete. Results saved to benchmark_results.csv
 ```
